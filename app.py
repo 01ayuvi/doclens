@@ -1,6 +1,6 @@
 import streamlit as st
 
-from services.extractor import extract_pdf
+from services.document_processor import process_document
 
 
 st.set_page_config(
@@ -10,18 +10,22 @@ st.set_page_config(
 )
 
 st.title("📄 DocLens")
-st.subheader("AI Document Intelligence Assistant")
+
+st.subheader(
+    "AI Document Intelligence Assistant"
+)
 
 st.write(
     "Turn complex documents into clear, actionable intelligence."
 )
 
+
 uploaded_file = st.file_uploader(
-    "Upload a PDF document",
-    type=["pdf"],
+    "Upload a document",
+    type=["pdf", "png", "jpg", "jpeg"],
     help=(
-        "Upload a text-based PDF. "
-        "Scanned documents will be supported through OCR."
+        "Upload a PDF, scanned PDF, PNG, JPG, "
+        "or JPEG document."
     ),
 )
 
@@ -32,12 +36,22 @@ if uploaded_file is not None:
 
     try:
 
-        with st.spinner("Analyzing document..."):
-            result = extract_pdf(file_bytes)
+        with st.spinner(
+            "Processing document..."
+        ):
 
-        st.success("PDF processed successfully.")
+            result = process_document(
+                file_bytes,
+                uploaded_file.name,
+            )
 
-        st.subheader("Document Overview")
+        st.success(
+            "Document processed successfully."
+        )
+
+        st.subheader(
+            "Document Overview"
+        )
 
         col1, col2, col3 = st.columns(3)
 
@@ -59,7 +73,13 @@ if uploaded_file is not None:
                 f"{result['character_count']:,}"
             )
 
-        st.subheader("Extracted Content")
+        st.caption(
+            f"File type: {result['file_type'].upper()}"
+        )
+
+        st.subheader(
+            "Extracted Content"
+        )
 
         for page in result["pages"]:
 
@@ -70,17 +90,28 @@ if uploaded_file is not None:
 
                 if page["text"]:
 
-                    st.text(page["text"])
+                    st.text(
+                        page["text"]
+                    )
 
                 else:
 
                     st.warning(
-                        "No text was detected on this page. "
-                        "OCR may be required."
+                        "No text could be extracted "
+                        "from this page."
                     )
+
+    except ValueError as error:
+
+        st.error(
+            str(error)
+        )
 
     except Exception as error:
 
         st.error(
-            f"Unable to process this PDF: {error}"
+            "Something went wrong while processing "
+            "the document."
         )
+
+        st.exception(error)
