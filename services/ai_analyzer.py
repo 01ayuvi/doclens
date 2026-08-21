@@ -13,7 +13,7 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not API_KEY:
     raise ValueError(
-        "GEMINI_API_KEY is not configured."
+        "GEMINI_API_KEY is not configured in the .env file."
     )
 
 
@@ -30,10 +30,8 @@ def analyze_document(
     summary_length: str = "medium",
 ) -> dict:
     """
-    Analyze document content using Gemini.
-
-    Returns:
-        Structured document analysis.
+    Analyze a document using Gemini and return
+    structured document intelligence.
     """
 
     length_instructions = {
@@ -42,8 +40,8 @@ def analyze_document(
             "100 words."
         ),
         "medium": (
-            "Provide a moderately detailed summary, "
-            "approximately 250 words."
+            "Provide a balanced summary, approximately "
+            "250 words."
         ),
         "long": (
             "Provide a detailed summary, approximately "
@@ -64,32 +62,72 @@ Analyze the document provided below.
 Your task is to produce:
 
 1. A clear summary.
-2. The most important key points/main ideas.
-3. Useful improvement suggestions based on the
-   document's content, clarity, completeness, or
-   actionability.
+2. The most important key points and main ideas.
+3. Useful improvement suggestions based only on
+   the document's content, clarity, completeness,
+   or actionability.
+
+Also create a Document Intelligence profile.
+
+Determine:
+
+- what type of document this is
+- its primary topic
+- its approximate complexity for a general reader
+- its three most important themes
+- the single most important takeaway
+- practical actionable insights that can be derived
+  from the document
+
+Do not invent facts that are not supported by the
+document.
 
 Summary length requirement:
+
 {selected_instruction}
 
-Return ONLY valid JSON using exactly this structure:
+Return ONLY valid JSON.
 
-{{
-  "summary": "string",
-  "key_points": [
-    "string",
-    "string",
-    "string"
-  ],
-  "improvement_suggestions": [
-    "string",
-    "string",
-    "string"
-  ]
-}}
+The JSON must contain these fields:
+
+summary:
+A string containing the document summary.
+
+key_points:
+An array containing the most important points.
+
+improvement_suggestions:
+An array containing useful suggestions for improving
+the document.
+
+document_intelligence:
+An object containing:
+
+document_type:
+The type of document.
+
+primary_topic:
+The main subject of the document.
+
+complexity:
+Choose exactly one of:
+Low, Medium, High.
+
+main_themes:
+An array containing the three most important themes.
+
+key_takeaway:
+The single most important takeaway from the document.
+
+actionable_insights:
+An array containing practical insights derived
+from the document.
 
 Do not add Markdown.
 Do not add explanations outside the JSON.
+
+The document intelligence profile must be grounded
+only in the provided document.
 
 DOCUMENT:
 
@@ -97,35 +135,63 @@ DOCUMENT:
 """
 
     response = client.models.generate_content(
-    model=MODEL_NAME,
-    contents=prompt,
-    config=types.GenerateContentConfig(
-        response_mime_type="application/json",
-        automatic_function_calling=types.AutomaticFunctionCallingConfig(
-            disable=True
+        model=MODEL_NAME,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            automatic_function_calling=(
+                types.AutomaticFunctionCallingConfig(
+                    disable=True
+                )
+            ),
         ),
-    ),
-)
+    )
 
     response_text = response.text.strip()
 
-    # Remove accidental Markdown code fences.
-    if response_text.startswith("```"):
-        response_text = response_text.strip("`")
-
-        if response_text.startswith("json"):
-            response_text = response_text[4:].strip()
-
     try:
-
-        result = json.loads(
-            response_text
-        )
+        result = json.loads(response_text)
 
     except json.JSONDecodeError as error:
-
         raise ValueError(
-            "The AI returned an invalid response."
+            "Gemini returned an invalid JSON response."
         ) from error
+
+    # Basic validation to make sure the AI returned
+    # the structure our application expects.
+
+    required_fields = [
+        "summary",
+        "key_points",
+        "improvement_suggestions",
+        "document_intelligence",
+    ]
+
+    for field in required_fields:
+        if field not in result:
+            raise ValueError(
+                f"AI response is missing required field: "
+                f"{field}"
+            )
+
+    intelligence = result[
+        "document_intelligence"
+    ]
+
+    intelligence_fields = [
+        "document_type",
+        "primary_topic",
+        "complexity",
+        "main_themes",
+        "key_takeaway",
+        "actionable_insights",
+    ]
+
+    for field in intelligence_fields:
+        if field not in intelligence:
+            raise ValueError(
+                "AI document intelligence is missing "
+                f"required field: {field}"
+            )
 
     return result

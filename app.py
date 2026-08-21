@@ -38,6 +38,10 @@ if uploaded_file is not None:
 
     try:
 
+        # -----------------------------------------
+        # DOCUMENT PROCESSING
+        # -----------------------------------------
+
         with st.spinner(
             "Processing document..."
         ):
@@ -64,19 +68,19 @@ if uploaded_file is not None:
         with col1:
             st.metric(
                 "Pages",
-                document["page_count"]
+                document["page_count"],
             )
 
         with col2:
             st.metric(
                 "Words",
-                f"{document['word_count']:,}"
+                f"{document['word_count']:,}",
             )
 
         with col3:
             st.metric(
                 "Characters",
-                f"{document['character_count']:,}"
+                f"{document['character_count']:,}",
             )
 
         st.caption(
@@ -162,9 +166,7 @@ if uploaded_file is not None:
                     "🔑 Key Points"
                 )
 
-                for point in analysis[
-                    "key_points"
-                ]:
+                for point in analysis["key_points"]:
 
                     st.markdown(
                         f"- {point}"
@@ -179,14 +181,100 @@ if uploaded_file is not None:
                 )
 
                 for index, suggestion in enumerate(
-                    analysis[
-                        "improvement_suggestions"
-                    ],
+                    analysis["improvement_suggestions"],
                     start=1,
                 ):
 
                     st.markdown(
                         f"**{index}.** {suggestion}"
+                    )
+
+                # ---------------------------------
+                # DOCUMENT INTELLIGENCE
+                # ---------------------------------
+
+                st.subheader(
+                    "🧠 Document Intelligence"
+                )
+
+                intelligence = analysis[
+                    "document_intelligence"
+                ]
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+
+                    st.markdown(
+                        "**Document Type**"
+                    )
+
+                    st.write(
+                        intelligence["document_type"]
+                    )
+
+                with col2:
+
+                    st.markdown(
+                        "**Primary Topic**"
+                    )
+
+                    st.write(
+                        intelligence["primary_topic"]
+                    )
+
+                with col3:
+
+                    st.markdown(
+                        "**Complexity**"
+                    )
+
+                    st.write(
+                        intelligence["complexity"]
+                    )
+
+                # ---------------------------------
+                # MAIN THEMES
+                # ---------------------------------
+
+                st.markdown(
+                    "### Main Themes"
+                )
+
+                for theme in intelligence[
+                    "main_themes"
+                ]:
+
+                    st.markdown(
+                        f"- {theme}"
+                    )
+
+                # ---------------------------------
+                # KEY TAKEAWAY
+                # ---------------------------------
+
+                st.markdown(
+                    "### 🎯 Key Takeaway"
+                )
+
+                st.info(
+                    intelligence["key_takeaway"]
+                )
+
+                # ---------------------------------
+                # ACTIONABLE INSIGHTS
+                # ---------------------------------
+
+                st.markdown(
+                    "### ⚡ Actionable Insights"
+                )
+
+                for insight in intelligence[
+                    "actionable_insights"
+                ]:
+
+                    st.markdown(
+                        f"→ {insight}"
                     )
 
         # -----------------------------------------
