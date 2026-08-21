@@ -4,3 +4,4 @@ Pillow
 pytesseract
 google-genai
 python-dotenv
+pytest
