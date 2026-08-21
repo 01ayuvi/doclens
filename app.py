@@ -1,6 +1,7 @@
 import streamlit as st
 
 from services.document_processor import process_document
+from services.ai_analyzer import analyze_document
 
 
 st.set_page_config(
@@ -8,6 +9,7 @@ st.set_page_config(
     page_icon="📄",
     layout="wide",
 )
+
 
 st.title("📄 DocLens")
 
@@ -40,7 +42,7 @@ if uploaded_file is not None:
             "Processing document..."
         ):
 
-            result = process_document(
+            document = process_document(
                 file_bytes,
                 uploaded_file.name,
             )
@@ -48,6 +50,10 @@ if uploaded_file is not None:
         st.success(
             "Document processed successfully."
         )
+
+        # -----------------------------------------
+        # DOCUMENT OVERVIEW
+        # -----------------------------------------
 
         st.subheader(
             "Document Overview"
@@ -58,35 +64,144 @@ if uploaded_file is not None:
         with col1:
             st.metric(
                 "Pages",
-                result["page_count"]
+                document["page_count"]
             )
 
         with col2:
             st.metric(
                 "Words",
-                f"{result['word_count']:,}"
+                f"{document['word_count']:,}"
             )
 
         with col3:
             st.metric(
                 "Characters",
-                f"{result['character_count']:,}"
+                f"{document['character_count']:,}"
             )
 
         st.caption(
-            f"File type: {result['file_type'].upper()}"
+            f"File: {document['filename']} | "
+            f"Type: {document['file_type'].upper()}"
         )
+
+        # -----------------------------------------
+        # SUMMARY LENGTH
+        # -----------------------------------------
 
         st.subheader(
-            "Extracted Content"
+            "AI Analysis"
         )
 
-        for page in result["pages"]:
+        summary_length = st.radio(
+            "Summary length",
+            options=[
+                "short",
+                "medium",
+                "long",
+            ],
+            format_func=lambda value: value.capitalize(),
+            horizontal=True,
+        )
 
-            with st.expander(
-                f"Page {page['page_number']} "
-                f"({page['word_count']:,} words)"
-            ):
+        analyze_button = st.button(
+            "✨ Analyze Document",
+            type="primary",
+        )
+
+        # -----------------------------------------
+        # AI ANALYSIS
+        # -----------------------------------------
+
+        if analyze_button:
+
+            document_text = "\n\n".join(
+                page["text"]
+                for page in document["pages"]
+                if page["text"]
+            )
+
+            if not document_text.strip():
+
+                st.warning(
+                    "No text could be extracted "
+                    "from this document."
+                )
+
+            else:
+
+                with st.spinner(
+                    "Generating document insights..."
+                ):
+
+                    analysis = analyze_document(
+                        document_text,
+                        summary_length=summary_length,
+                    )
+
+                st.success(
+                    "Document analysis complete."
+                )
+
+                # ---------------------------------
+                # SUMMARY
+                # ---------------------------------
+
+                st.subheader(
+                    "📝 Summary"
+                )
+
+                st.write(
+                    analysis["summary"]
+                )
+
+                # ---------------------------------
+                # KEY POINTS
+                # ---------------------------------
+
+                st.subheader(
+                    "🔑 Key Points"
+                )
+
+                for point in analysis[
+                    "key_points"
+                ]:
+
+                    st.markdown(
+                        f"- {point}"
+                    )
+
+                # ---------------------------------
+                # IMPROVEMENTS
+                # ---------------------------------
+
+                st.subheader(
+                    "💡 Improvement Suggestions"
+                )
+
+                for index, suggestion in enumerate(
+                    analysis[
+                        "improvement_suggestions"
+                    ],
+                    start=1,
+                ):
+
+                    st.markdown(
+                        f"**{index}.** {suggestion}"
+                    )
+
+        # -----------------------------------------
+        # RAW DOCUMENT
+        # -----------------------------------------
+
+        with st.expander(
+            "View Extracted Document"
+        ):
+
+            for page in document["pages"]:
+
+                st.markdown(
+                    f"### Page {page['page_number']}"
+                )
 
                 if page["text"]:
 
@@ -97,8 +212,7 @@ if uploaded_file is not None:
                 else:
 
                     st.warning(
-                        "No text could be extracted "
-                        "from this page."
+                        "No text detected on this page."
                     )
 
     except ValueError as error:
