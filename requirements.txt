@@ -1,7 +1,6 @@
-streamlit
-PyMuPDF
-Pillow
-pytesseract
-google-genai
-python-dotenv
-pytest
+streamlit==1.62.0
+google-genai==2.19.0
+python-dotenv==1.2.3
+pymupdf==1.28.2
+pytesseract==0.3.13
+pillow==12.3.0
